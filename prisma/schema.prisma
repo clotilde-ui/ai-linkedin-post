@@ -1,0 +1,58 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Project {
+  id                  String              @id @default(uuid())
+  name                String
+  createdAt           DateTime            @default(now())
+  scrapedPages        ScrapedPage[]
+  linkedinDescription LinkedinDescription?
+  linkedinPosts       LinkedinPost[]
+  linkedinIdeas       LinkedinPostIdea[]
+}
+
+model ScrapedPage {
+  id        String   @id @default(uuid())
+  url       String
+  content   String
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+
+  @@unique([url, projectId])
+}
+
+model LinkedinDescription {
+  id              String  @id @default(uuid())
+  descriptionText String
+  project         Project @relation(fields: [projectId], references: [id])
+  projectId       String  @unique
+}
+
+model LinkedinPost {
+  id        String   @id @default(uuid())
+  postText  String?
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+}
+
+model LinkedinPostIdea {
+  id        String   @id @default(uuid())
+  ideaText  String
+  createdAt DateTime @default(now())
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String
+}
+
+model Settings {
+  id           String  @id @default("settings")
+  openaiApiKey String?
+}
