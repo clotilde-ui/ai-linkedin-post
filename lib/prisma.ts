@@ -1,10 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 
-const datasourceUrl = process.env.DATABASE_URL;
-
-if (!datasourceUrl) {
-  throw new Error("DATABASE_URL manquant : définissez-le dans votre environnement.");
-}
+const datasourceUrl = process.env.DATABASE_URL ?? "file:./dev.db";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
