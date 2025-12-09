@@ -6,8 +6,7 @@ export default function LinkedinPostsPage() {
         Intégration Phantombuster à venir.
       </p>
       <p className="mt-2 text-sm text-black">
-        Le modèle Prisma <code>LinkedinPost</code> est prêt pour l’historique
-        futur.
+        Le modèle Prisma <code>LinkedinPost</code> est prêt pour l’historique futur.
       </p>
     </div>
   );

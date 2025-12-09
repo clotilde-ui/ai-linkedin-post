@@ -7,23 +7,25 @@ generator client {
 
 datasource db {
   provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 model Project {
-  id                  String              @id @default(uuid())
+  id                  String               @id @default(uuid())
   name                String
-  createdAt           DateTime            @default(now())
+  createdAt           DateTime             @default(now())
   scrapedPages        ScrapedPage[]
   linkedinDescription LinkedinDescription?
   linkedinPosts       LinkedinPost[]
   linkedinIdeas       LinkedinPostIdea[]
+  extraInfo           ProjectExtraInfo?
 }
 
 model ScrapedPage {
-  id        String   @id @default(uuid())
+  id        String  @id @default(uuid())
   url       String
   content   String
-  project   Project  @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
   projectId String
 
   @@unique([url, projectId])
@@ -50,9 +52,17 @@ model LinkedinPostIdea {
   createdAt DateTime @default(now())
   project   Project  @relation(fields: [projectId], references: [id])
   projectId String
+  status    String   @default("NONE")
 }
 
 model Settings {
   id           String  @id @default("settings")
   openaiApiKey String?
+}
+
+model ProjectExtraInfo {
+  id        String   @id @default(uuid())
+  content   String
+  project   Project  @relation(fields: [projectId], references: [id])
+  projectId String   @unique
 }

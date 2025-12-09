@@ -19,15 +19,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "openaiApiKey invalide" }, { status: 400 });
     }
 
+    // Nous essayons de valider, mais si c'est une clé Service Account restreinte,
+    // on accepte quand même si l'erreur est liée aux permissions (403).
     if (openaiApiKey) {
       try {
         const client = new OpenAI({ apiKey: openaiApiKey });
-        const models = await client.models.list({ limit: 1 });
-        // Trigger iteration to validate key quickly
-        await models.next();
-      } catch (error) {
-        console.error("Validation OpenAI échouée", error);
-        return NextResponse.json({ error: "Clé OpenAI invalide" }, { status: 400 });
+        // On tente une action très légère pour vérifier la clé
+        await client.models.list();
+      } catch (error: any) {
+        console.warn("Avertissement validation OpenAI:", error);
+        
+        // Si l'erreur est "401" (Unauthorized), la clé est vraiment fausse ou révoquée.
+        // On bloque uniquement dans ce cas.
+        if (error?.status === 401) {
+             return NextResponse.json({ error: "Clé OpenAI invalide (Erreur 401)" }, { status: 400 });
+        }
+        
+        // Pour toutes les autres erreurs (comme 403 Forbidden typique des Service Accounts),
+        // on continue car la clé est probablement valide pour générer du texte.
       }
     }
 

@@ -1,17 +1,17 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
-import { useSelectedProject } from "@/lib/useSelectedProject";
+import { useProjectId } from "@/lib/useProjectId";
 
 export default function LinkedinDescriptionPage() {
-  const { selectedProject } = useSelectedProject();
+  const projectId = useProjectId();
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchDescription = async (projectId: string) => {
+    const fetchDescription = async (targetProjectId: string) => {
       try {
-        const res = await fetch(`/api/linkedin-description?projectId=${projectId}`);
+        const res = await fetch(`/api/linkedin-description?projectId=${targetProjectId}`);
         if (res.ok) {
           const data = await res.json();
           setDescription(data.description?.descriptionText ?? "");
@@ -23,17 +23,15 @@ export default function LinkedinDescriptionPage() {
       }
     };
 
-    if (selectedProject?.id) {
-      fetchDescription(selectedProject.id);
-    } else {
-      setDescription("");
+    if (projectId) {
+      fetchDescription(projectId);
     }
-  }, [selectedProject?.id]);
+  }, [projectId]);
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!selectedProject?.id) {
-      setStatus("Sélectionnez d’abord un projet.");
+    if (!projectId) {
+      setStatus("Projet introuvable.");
       return;
     }
     setStatus("Sauvegarde...");
@@ -42,7 +40,7 @@ export default function LinkedinDescriptionPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          projectId: selectedProject.id,
+          projectId,
           descriptionText: description,
         }),
       });
@@ -79,11 +77,6 @@ export default function LinkedinDescriptionPage() {
           </button>
         </form>
         {status && <p className="mt-2 text-sm text-black">{status}</p>}
-        {!selectedProject && (
-          <p className="mt-2 text-sm text-red-600">
-            Aucun projet sélectionné. Rendez-vous dans l’onglet Projects.
-          </p>
-        )}
       </div>
     </div>
   );

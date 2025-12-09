@@ -3,7 +3,7 @@ import * as cheerio from "cheerio";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 
-const MAX_PAGES = 50;
+const MAX_PAGES_DEFAULT = 50;
 
 const normalizeUrl = (href: string, base: URL) => {
   try {
@@ -53,17 +53,22 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const { url, projectId } = await request.json();
+    const { url, projectId, maxPages } = await request.json();
     if (!url || !projectId) {
       return NextResponse.json({ error: "url et projectId requis" }, { status: 400 });
     }
+
+    const limit =
+      typeof maxPages === "number" && Number.isFinite(maxPages)
+        ? Math.min(Math.max(Math.floor(maxPages), 1), MAX_PAGES_DEFAULT)
+        : MAX_PAGES_DEFAULT;
 
     const start = new URL(url);
     const queue: string[] = [start.href];
     const visited = new Set<string>();
     let createdCount = 0;
 
-    while (queue.length && visited.size < MAX_PAGES) {
+    while (queue.length && visited.size < limit) {
       const currentUrl = queue.shift()!;
       if (visited.has(currentUrl)) continue;
       visited.add(currentUrl);
@@ -87,7 +92,7 @@ export async function POST(request: Request) {
 
         const links = extractLinks($, new URL(currentUrl));
         for (const link of links) {
-          if (visited.size + queue.length >= MAX_PAGES) break;
+          if (visited.size + queue.length >= limit) break;
           if (!visited.has(link)) queue.push(link);
         }
       } catch (error) {
@@ -96,9 +101,29 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({ createdCount, visited: visited.size });
+    return NextResponse.json({ createdCount, visited: visited.size, limit });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: "Erreur lors du scraping" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  try {
+    const { pageId, projectId } = await request.json();
+    if (!pageId || !projectId) {
+      return NextResponse.json({ error: "pageId et projectId requis" }, { status: 400 });
+    }
+
+    const existing = await prisma.scrapedPage.findUnique({ where: { id: pageId } });
+    if (!existing || existing.projectId !== projectId) {
+      return NextResponse.json({ error: "Page introuvable pour ce projet" }, { status: 404 });
+    }
+
+    await prisma.scrapedPage.delete({ where: { id: pageId } });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ error: "Erreur lors de la suppression" }, { status: 500 });
   }
 }
